@@ -16,7 +16,7 @@ jobs:
 
     env:
       Solution_Name: ZCRTSPViewer_WPF.sln  # Your solution file
-      Test_Project_Path: ZCRTSPViewer_WPF/ZCRTSPViewer_WPF/ZCRTSPViewer_WPF.csproj  # Path to test project
+      Test_Project_Path: ZCRTSPViewer_WPF/ZCRTSPViewer_WPF.csproj
 
     steps:
     - name: Checkout repository
