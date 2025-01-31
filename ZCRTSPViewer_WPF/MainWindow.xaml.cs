@@ -4,6 +4,7 @@ using LibVLCSharp.Shared;
 using System.IO;
 using LibVLCSharp.WPF;
 using System.Windows.Media;
+using System.Text;
 
 namespace ZCRTSPViewer_WPF
 {
@@ -14,15 +15,31 @@ namespace ZCRTSPViewer_WPF
         public MainWindow()
         {
             InitializeComponent();
+
+            //Initialize VLC Library
+            Core.Initialize(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VLC"));
+
+            //Load all camera views
             LoadView();
         }
 
         public void LoadView()
         {
-            Core.Initialize(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VLC"));
-
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "saved_cameras.txt");
-            List<(string name, string url)> cameras = new List<(string, string)>();
+
+            if (!File.Exists(filePath))
+            {
+                using (FileStream fs = File.Create(filePath))
+                {
+                    // Add some text to file
+                    Byte[] title = new UTF8Encoding(true).GetBytes("http://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov");
+                    fs.Write(title, 0, title.Length);
+                }
+
+                MessageBox.Show("Initial 'saved_cameras.txt' has been created. You can now put your own URL's in the file");
+            }
+
+            List<string> cameraUrls = new List<string>();
             int lineCount = 0;
 
             using (StreamReader sr = new StreamReader(filePath))
@@ -32,13 +49,8 @@ namespace ZCRTSPViewer_WPF
                 {
                     lineCount++;
 
-                    // Extract name and url from the line
-                    var name = line.Split(new[] { "name=\"" }, StringSplitOptions.None)[1]
-                                   .Split('"')[0];
-                    var url = line.Split(new[] { "url=\"" }, StringSplitOptions.None)[1]
-                                  .Split('"')[0];
-
-                    cameras.Add((name, url));
+                    // Add the URL to the list
+                    cameraUrls.Add(line);
                 }
             }
 
@@ -49,10 +61,10 @@ namespace ZCRTSPViewer_WPF
             // Ensure the grid has enough rows and columns
             UpdateGrid(requiredRows, requiredColumns);
 
-            // Now you have a list of cameras with their names and URLs
-            foreach (var camera in cameras)
+            // Now you have a list of camera URLs
+            foreach (var url in cameraUrls)
             {
-                AddVideoView(camera.url);
+                AddVideoView(url);
             }
         }
 
