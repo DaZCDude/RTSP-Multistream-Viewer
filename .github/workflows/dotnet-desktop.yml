@@ -1,73 +1,43 @@
-name: .NET Core Desktop
+name: Build and Release WPF App
 
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        configuration: [Release]
-
     runs-on: windows-latest
 
     env:
-      Solution_Name: ZCRTSPViewer_WPF.sln  # Your solution file
-      Test_Project_Path: ZCRTSPViewer_WPF/ZCRTSPViewer_WPF.csproj
+      Solution_Name: ZCRTSPViewer_WPF.sln
+      Configuration: Release
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    # Install the .NET SDK
     - name: Install .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x  # Ensure this matches your project’s .NET version
+        dotnet-version: 8.0.x
 
-    # Add MSBuild to the PATH
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Build WPF project
+      run: dotnet publish $env:Solution_Name --configuration $env:Configuration --output ./release --self-contained true --runtime win-x64
 
-    # Restore dependencies
-    - name: Restore dependencies
-      run: dotnet restore $env:Solution_Name
-
-    # Build the solution
-    - name: Build the application
-      run: dotnet build $env:Solution_Name --configuration $env:Configuration --no-restore
-      env:
-        Configuration: ${{ matrix.configuration }}
-
-    # Execute unit tests
-    - name: Run unit tests
-      run: dotnet test $env:Test_Project_Path --configuration $env:Configuration --no-build --verbosity normal
-      env:
-        Configuration: ${{ matrix.configuration }}
-
-    # Decode the base64 PFX certificate (if signing is required)
-    - name: Decode and store signing certificate
-      if: env.Base64_Encoded_Pfx != ''
+    - name: Package Release Files
       run: |
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        $certificatePath = "$env:Temp\SigningCert.pfx"
-        [System.IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
-      shell: pwsh
+        mkdir packaged
+        copy release\* packaged\
+      shell: cmd
 
-    # Remove the PFX certificate after signing (for security)
-    - name: Cleanup signing certificate
-      if: env.Base64_Encoded_Pfx != ''
-      run: Remove-Item -Path "$env:Temp\SigningCert.pfx"
-      shell: pwsh
-
-    # Upload build artifacts
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload to GitHub Releases
+      uses: softprops/action-gh-release@v1
       with:
-        name: BuildOutput
-        path: ZCRTSPViewer_WPF/bin/${{ matrix.configuration }}/
+        tag_name: v1.0.${{ github.run_number }}
+        release_name: Release v1.0.${{ github.run_number }}
+        draft: false
+        prerelease: false
+        files: packaged/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
