@@ -51,3 +51,7 @@ jobs:
           source.tar.gz
           app.zip
         token: ${{ secrets.RELEASE_TOKEN }}
+      env:
+        Solution_Name: ZCRTSPViewer_WPF.sln
+        Configuration: Release
+        DOTNET_ROOT: C:\Program Files\dotnet
