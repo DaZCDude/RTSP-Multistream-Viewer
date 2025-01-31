@@ -12,12 +12,18 @@ namespace ZCRTSPViewer_WPF
     {
         private int CameraAmount = 0;
 
+        private LibVLC _libVlc;
+
         public MainWindow()
         {
             InitializeComponent();
 
             //Initialize VLC Library
             Core.Initialize(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VLC"));
+
+            // Initialize a single LibVLC instance
+            _libVlc = new LibVLC();
+            _libVlc.Log += OnVlcLog;
 
             //Load all camera views
             LoadView();
@@ -76,7 +82,7 @@ namespace ZCRTSPViewer_WPF
 
             if (CameraAmount >= totalSlots)
             {
-                MessageBox.Show("Please increase grid size to add more cameras");
+                //MessageBox.Show("Please increase grid size to add more cameras");
                 return;
             }
 
@@ -87,20 +93,18 @@ namespace ZCRTSPViewer_WPF
             var videoView = new VideoView();
             videoView.Background = Brushes.Black;
 
-            var _libVlc = new LibVLC();
-            _libVlc.Log += OnVlcLog;
             var _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVlc);
-
-            _mediaPlayer.Scale = 0;
-            _mediaPlayer.AspectRatio = "640:360";
 
             videoView.MediaPlayer = _mediaPlayer;
 
             var media = new Media(_libVlc, streamUrl, FromType.FromLocation);
 
             // Add options to reduce resolution and improve performance
-            media.AddOption(":network-caching=2000"); // Adjust network caching for smoother playback
+            media.AddOption(":network-caching=3000"); // Adjust network caching for smoother playback
             media.AddOption(":avcodec-hw=any"); // Enable hardware acceleration
+            //media.AddOption(":sout=#transcode{vcodec=h264,width=256,height=144}:display");
+            media.AddOption(":swscale-mode=fast");  // Faster scaling (if resizing)
+            media.AddOption(":avcodec-skiploopfilter=all"); // Skip CPU-heavy filters
 
             _mediaPlayer.Play(media);
 
