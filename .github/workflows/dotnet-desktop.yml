@@ -25,11 +25,19 @@ jobs:
     - name: Build WPF project
       run: dotnet publish $env:Solution_Name --configuration $env:Configuration --output ./release --self-contained true --runtime win-x64
 
-    - name: Package Release Files
+    - name: Create Source Code Archives
       run: |
-        mkdir packaged
-        copy release\* packaged\
-      shell: cmd
+        # Create source code zip and tar.gz using git archive
+        git archive HEAD -o source.zip
+        git archive HEAD -o source.tar.gz
+      
+    - name: Create Application Bundle
+      run: |
+        # Create a clean zip with all build outputs
+        Compress-Archive -Path ./release\* -DestinationPath app.zip
+        # Remove individual build files
+        Remove-Item -Recurse -Force ./release
+      shell: pwsh
 
     - name: Upload to GitHub Releases
       uses: softprops/action-gh-release@v1
@@ -38,6 +46,8 @@ jobs:
         name: Release v1.0.${{ github.run_number }}
         draft: false
         prerelease: false
-        files: packaged/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use a Personal Access Token (PAT) if repo is private
+        files: |
+          source.zip
+          source.tar.gz
+          app.zip
+        token: ${{ secrets.RELEASE_TOKEN }}
