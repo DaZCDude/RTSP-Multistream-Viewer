@@ -5,9 +5,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZCRTSPViewer_WPF"
+        xmlns:main="clr-namespace:ZCRTSPViewer_WPF"
         mc:Ignorable="d"
         Title="ZC RTSP Viewer" Height="720" Width="1280">
-
+    <Window.CommandBindings>
+        <CommandBinding Command="Close" Executed="OnFullscreenExecuted"/>
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="F11" Command="Close"/>
+    </Window.InputBindings>
     <Grid Background="#FF081110">
         <Grid x:Name="VideoGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
     </Grid>

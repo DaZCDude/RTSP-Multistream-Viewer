@@ -5,6 +5,7 @@ using System.IO;
 using LibVLCSharp.WPF;
 using System.Windows.Media;
 using System.Text;
+using System.Windows.Input;
 
 namespace ZCRTSPViewer_WPF
 {
@@ -27,6 +28,22 @@ namespace ZCRTSPViewer_WPF
 
             //Load all camera views
             LoadView();
+        }
+
+        private void OnFullscreenExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (this.WindowStyle == WindowStyle.None)
+            {
+                this.ResizeMode = ResizeMode.CanResize;
+                this.WindowStyle = WindowStyle.SingleBorderWindow;
+            }
+            else
+            {
+                this.ResizeMode = ResizeMode.NoResize;
+                this.WindowStyle = WindowStyle.None;
+                this.WindowState = WindowState.Normal;
+                this.WindowState = WindowState.Maximized;
+            }
         }
 
         public void LoadView()
@@ -95,6 +112,9 @@ namespace ZCRTSPViewer_WPF
 
             var _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVlc);
 
+            //Force 16:9 Aspect Ratio
+            _mediaPlayer.AspectRatio = "16:9";
+
             videoView.MediaPlayer = _mediaPlayer;
 
             var media = new Media(_libVlc, streamUrl, FromType.FromLocation);
@@ -102,7 +122,6 @@ namespace ZCRTSPViewer_WPF
             // Add options to reduce resolution and improve performance
             media.AddOption(":network-caching=3000"); // Adjust network caching for smoother playback
             media.AddOption(":avcodec-hw=any"); // Enable hardware acceleration
-            //media.AddOption(":sout=#transcode{vcodec=h264,width=256,height=144}:display");
             media.AddOption(":swscale-mode=fast");  // Faster scaling (if resizing)
             media.AddOption(":avcodec-skiploopfilter=all"); // Skip CPU-heavy filters
 
