@@ -1,4 +1,4 @@
-# RTSP Multistream Viewer
+# RTSP / ONVIF Multistream Viewer
 
 ## Place URLs in `saved_cameras.txt` file.<br>Press enter after each URL.<br>Press `F11` to toggle fullscreen.
 
