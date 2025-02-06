@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ZCRTSPViewer_WPF"
         xmlns:main="clr-namespace:ZCRTSPViewer_WPF"
         mc:Ignorable="d"
-        Title="ZC RTSP Viewer" Height="720" Width="1280">
+        Title="ZC RTSP Viewer" Height="720" Width="1280" Closing="Window_Closing">
     <Window.CommandBindings>
         <CommandBinding Command="Close" Executed="OnFullscreenExecuted"/>
     </Window.CommandBindings>
@@ -15,6 +15,7 @@
         <KeyBinding Key="F11" Command="Close"/>
     </Window.InputBindings>
     <Grid Background="#FF081110">
-        <Grid x:Name="VideoGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Grid x:Name="VideoGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,100"/>
+        <Button x:Name="RecordBtn" Content="Start Recording" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="RecordBtn_Click" Margin="0,0,25,25"/>
     </Grid>
 </Window>

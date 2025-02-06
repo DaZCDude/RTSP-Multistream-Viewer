@@ -6,12 +6,19 @@ using LibVLCSharp.WPF;
 using System.Windows.Media;
 using System.Text;
 using System.Windows.Input;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace ZCRTSPViewer_WPF
 {
     public partial class MainWindow : Window
     {
+        private bool IsRecording = false;
+
+        List<string> cameraUrls = new List<string>();
         private int CameraAmount = 0;
+
+        List<Process> RecordingProcesses = new List<Process>();
 
         private LibVLC _libVlc;
 
@@ -62,7 +69,6 @@ namespace ZCRTSPViewer_WPF
                 MessageBox.Show("Initial 'saved_cameras.txt' has been created. You can now put your own URL's in the file");
             }
 
-            List<string> cameraUrls = new List<string>();
             int lineCount = 0;
 
             using (StreamReader sr = new StreamReader(filePath))
@@ -107,25 +113,13 @@ namespace ZCRTSPViewer_WPF
             int row = CameraAmount / maxColumns;  // Integer division
             int column = CameraAmount % maxColumns;  // Remainder
 
-            var videoView = new VideoView();
+            var videoView = new VideoView
+            {
+                Background = Brushes.Black,
+                Tag = streamUrl // Store the URL inside the VideoView
+            };
             videoView.Background = Brushes.Black;
-
-            var _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVlc);
-
-            //Force 16:9 Aspect Ratio
-            _mediaPlayer.AspectRatio = "16:9";
-
-            videoView.MediaPlayer = _mediaPlayer;
-
-            var media = new Media(_libVlc, streamUrl, FromType.FromLocation);
-
-            // Add options to reduce resolution and improve performance
-            media.AddOption(":network-caching=3000"); // Adjust network caching for smoother playback
-            media.AddOption(":avcodec-hw=any"); // Enable hardware acceleration
-            media.AddOption(":swscale-mode=fast");  // Faster scaling (if resizing)
-            media.AddOption(":avcodec-skiploopfilter=all"); // Skip CPU-heavy filters
-
-            _mediaPlayer.Play(media);
+            videoView.Loaded += VideoView_Loaded;
 
             Grid.SetRow(videoView, row);
             Grid.SetColumn(videoView, column);
@@ -133,6 +127,29 @@ namespace ZCRTSPViewer_WPF
             CameraAmount += 1;
             VideoGrid.Children.Add(videoView);
         }
+
+        private void VideoView_Loaded(object sender, RoutedEventArgs e)
+        {
+            var videoView = sender as VideoView;
+            if (videoView == null || videoView.Tag == null) return;
+
+            string streamUrl = videoView.Tag.ToString();
+            if (string.IsNullOrEmpty(streamUrl)) return;
+
+            var _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVlc);
+            _mediaPlayer.AspectRatio = "16:9";
+
+            videoView.MediaPlayer = _mediaPlayer;
+
+            var media = new Media(_libVlc, streamUrl, FromType.FromLocation);
+            media.AddOption(":network-caching=3000");
+            media.AddOption(":avcodec-hw=any");
+            media.AddOption(":swscale-mode=fast");
+            media.AddOption(":avcodec-skiploopfilter=all");
+
+            _mediaPlayer.Play(media);
+        }
+
 
         private void OnVlcLog(object sender, LogEventArgs e)
         {
@@ -226,6 +243,60 @@ namespace ZCRTSPViewer_WPF
                 }
             }
             return true;
+        }
+
+        private void RecordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            IsRecording = !IsRecording;
+
+            if (IsRecording)
+            {
+                RecordBtn.Content = "Stop Recording";
+
+                //Create a new subfolder in the User Videos folder for all recordings
+                string path = System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos) + "/ZCRTSP-Recordings").FullName;
+                string currentdate = DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
+
+                foreach (var url in cameraUrls)
+                {
+                    string MainStreamURL = url;
+
+                    //If the URL is a substream, change it to a mainstream
+                    if (url.EndsWith("2"))
+                    {
+                        MainStreamURL = url.Substring(0, url.Length - 1) + "1";
+                    }
+
+                    //Create the specific camera recording folder
+                    string local_cam_path = Directory.CreateDirectory(path + "/" + MainStreamURL.Substring(MainStreamURL.LastIndexOf('@') + 1)).FullName;
+
+                    Process process = new Process();
+                    RecordingProcesses.Add(process);
+                    ProcessStartInfo startInfo = new ProcessStartInfo();
+                    startInfo.WindowStyle = ProcessWindowStyle.Hidden; //Hide cmd
+                    startInfo.FileName = "ffmpeg.exe";
+                    startInfo.Arguments = "-rtsp_transport tcp -i " + MainStreamURL + " -c copy -fflags nobuffer -flags low_delay -vsync 0 -buffer_size 512k " + local_cam_path + "/" + currentdate + ".avi";
+                    process.StartInfo = startInfo;
+                    process.Start();
+                }
+            }
+            else
+            {
+                RecordBtn.Content = "Start Recording";
+
+                foreach (Process process in RecordingProcesses)
+                {
+                    process.Kill();
+                }
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            foreach (Process process in RecordingProcesses)
+            {
+                process.Kill();
+            }
         }
     }
 }
