@@ -6,3 +6,6 @@
 [LibVLCSharp](https://www.nuget.org/packages/LibVLCSharp/3.9.2)
 <br>
 [LibVLCSharp.WPF](https://www.nuget.org/packages/LibVLCSharp.WPF/3.9.2)
+
+### Other Packages used in project:
+[FFmpeg](https://www.ffmpeg.org/)
