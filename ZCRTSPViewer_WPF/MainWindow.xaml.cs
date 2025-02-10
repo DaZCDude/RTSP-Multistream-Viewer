@@ -7,14 +7,18 @@ using System.Windows.Media;
 using System.Text;
 using System.Windows.Input;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace ZCRTSPViewer_WPF
 {
     public partial class MainWindow : Window
     {
+        //Timer Variables for restarting the program
+        private System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
+        private TimeSpan ResetTime = new TimeSpan(0,0,10);
+
         private bool IsRecording = false;
 
+        //Keep count of all camera URLs and amounts
         List<string> cameraUrls = new List<string>();
         private int CameraAmount = 0;
 
@@ -35,14 +39,87 @@ namespace ZCRTSPViewer_WPF
 
             //Load all camera views
             LoadView();
+
+            //Set fullscren on startup, if argument is given
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Length > 1)
+            {
+                string argument = args[1];
+
+                if (argument == "fullscreen")
+                {
+                    this.ResizeMode = ResizeMode.NoResize;
+                    this.WindowStyle = WindowStyle.None;
+                    this.WindowState = WindowState.Normal;
+                    this.WindowState = WindowState.Maximized;
+                    VideoGrid.Margin = new Thickness(0, 0, 0, 0);
+                }
+
+                else if (argument == "timer")
+                {
+                    StartResetTimer();
+                }
+            }
+
+            // Check if both "fullscreen" and "timer" arguments are present
+            if (args.Length > 2)
+            {
+                // Additional logic to check for both fullscreen and timer arguments
+                if (args[1] == "fullscreen" && args[2] == "timer")
+                {
+                    // Handle both arguments here
+                    // Fullscreen logic (as above)
+                    this.ResizeMode = ResizeMode.NoResize;
+                    this.WindowStyle = WindowStyle.None;
+                    this.WindowState = WindowState.Normal;
+                    this.WindowState = WindowState.Maximized;
+                    VideoGrid.Margin = new Thickness(0, 0, 0, 0);
+
+                    // Timer logic (as above)
+                    StartResetTimer();
+                }
+            }
+        }
+
+        void StartResetTimer()
+        {
+            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+            dispatcherTimer.Interval = ResetTime;
+            dispatcherTimer.Start();
+
+            ResetCamerasBtn.Content = "Stop Reset Cameras Timer";
+        }
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            Process process = new Process();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden; //Hide cmd
+            startInfo.FileName = "ZCRTSPViewer_WPF.exe";
+            startInfo.Arguments = "fullscreen timer";
+            process.StartInfo = startInfo;
+            process.Start();
+
+            foreach (Process processlocal in RecordingProcesses)
+            {
+                processlocal.Kill();
+            }
+
+            Close();
         }
 
         private void OnFullscreenExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            ToggleFullscreen();
+        }
+
+        private void ToggleFullscreen()
         {
             if (this.WindowStyle == WindowStyle.None)
             {
                 this.ResizeMode = ResizeMode.CanResize;
                 this.WindowStyle = WindowStyle.SingleBorderWindow;
+                VideoGrid.Margin = new Thickness(0, 0, 0, 100);
             }
             else
             {
@@ -50,6 +127,7 @@ namespace ZCRTSPViewer_WPF
                 this.WindowStyle = WindowStyle.None;
                 this.WindowState = WindowState.Normal;
                 this.WindowState = WindowState.Maximized;
+                VideoGrid.Margin = new Thickness(0, 0, 0, 0);
             }
         }
 
@@ -118,7 +196,6 @@ namespace ZCRTSPViewer_WPF
                 Background = Brushes.Black,
                 Tag = streamUrl // Store the URL inside the VideoView
             };
-            videoView.Background = Brushes.Black;
             videoView.Loaded += VideoView_Loaded;
 
             Grid.SetRow(videoView, row);
@@ -270,14 +347,17 @@ namespace ZCRTSPViewer_WPF
                     //Create the specific camera recording folder
                     string local_cam_path = Directory.CreateDirectory(path + "/" + MainStreamURL.Substring(MainStreamURL.LastIndexOf('@') + 1)).FullName;
 
-                    Process process = new Process();
-                    RecordingProcesses.Add(process);
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden; //Hide cmd
-                    startInfo.FileName = "ffmpeg.exe";
-                    startInfo.Arguments = "-rtsp_transport tcp -i " + MainStreamURL + " -c copy -fflags nobuffer -flags low_delay -vsync 0 -buffer_size 512k " + local_cam_path + "/" + currentdate + ".avi";
-                    process.StartInfo = startInfo;
-                    process.Start();
+                    using (Process process = new Process())
+                    {
+                        ProcessStartInfo startInfo = new ProcessStartInfo
+                        {
+                            WindowStyle = ProcessWindowStyle.Hidden,
+                            FileName = "ffmpeg.exe",
+                            Arguments = "-rtsp_transport tcp -i " + MainStreamURL + " -c copy -fflags nobuffer -flags low_delay -vsync 0 -buffer_size 512k " + local_cam_path + "/" + currentdate + ".avi"
+                        };
+                        process.StartInfo = startInfo;
+                        process.Start();
+                    }
                 }
             }
             else
@@ -293,9 +373,38 @@ namespace ZCRTSPViewer_WPF
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            //Kill all FFMPEG instances before closing the program completely
             foreach (Process process in RecordingProcesses)
             {
                 process.Kill();
+            }
+        }
+
+        private void ResetCamerasBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (dispatcherTimer.IsEnabled)
+            {
+                dispatcherTimer.Stop();
+                ResetCamerasBtn.Content = "Start Reset Cameras Timer";
+            }
+            StartResetTimer();
+        }
+
+        private void ToggleFullscreenBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleFullscreen();
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            //Exit fullscreen is Escape key is pressed, and if fullscreen is active
+            if (e.Key == Key.Escape)
+            {
+                if (this.WindowStyle == WindowStyle.None)
+                {
+                    ToggleFullscreen();
+                }
+                e.Handled = true;
             }
         }
     }

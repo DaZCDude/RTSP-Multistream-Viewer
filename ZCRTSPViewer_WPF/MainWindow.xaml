@@ -7,15 +7,27 @@
         xmlns:local="clr-namespace:ZCRTSPViewer_WPF"
         xmlns:main="clr-namespace:ZCRTSPViewer_WPF"
         mc:Ignorable="d"
-        Title="ZC RTSP Viewer" Height="720" Width="1280" Closing="Window_Closing">
+        
+        Title="ZC RTSP Viewer"
+        Height="720"
+        Width="1280"
+        Closing="Window_Closing"
+        KeyDown="Window_PreviewKeyDown"
+        MinWidth="700"
+        MinHeight="300"
+        >
     <Window.CommandBindings>
         <CommandBinding Command="Close" Executed="OnFullscreenExecuted"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Key="F11" Command="Close"/>
     </Window.InputBindings>
-    <Grid Background="#FF081110">
+    <Grid Background="#10170f">
         <Grid x:Name="VideoGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,100"/>
-        <Button x:Name="RecordBtn" Content="Start Recording" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="RecordBtn_Click" Margin="0,0,25,25"/>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,25,25" HorizontalAlignment="Right">
+            <Button x:Name="ResetCamerasBtn" Content="Start Reset Cameras Timer" Margin="0,0,25,0" Click="ResetCamerasBtn_Click" Background="#FF446569" Foreground="#eff4ee" Width="200"/>
+            <Button x:Name="ToggleFullscreenBtn" Content="Toggle Fullscreen (F11)" Margin="0,0,25,0" Background="#FF446569" Foreground="#eff4ee" Width="200" Click="ToggleFullscreenBtn_Click"/>
+            <Button x:Name="RecordBtn" Content="Start Recording" Click="RecordBtn_Click" Width="150"/>
+        </StackPanel>
     </Grid>
 </Window>

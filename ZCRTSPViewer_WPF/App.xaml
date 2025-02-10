@@ -7,12 +7,11 @@
         <!-- Define a global style for all buttons -->
         <Style TargetType="Button">
             <!-- Set default properties -->
-            <Setter Property="Width" Value="100" />
-            <Setter Property="Height" Value="40" />
+            <Setter Property="Height" Value="50" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Background" Value="#FF9ED7CD" />
+            <Setter Property="Background" Value="#aac5a6" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontFamily" Value="Calibri" />
+            <Setter Property="FontFamily" Value="/Fonts/#Inter" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -21,7 +20,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="Gray"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="5">
+                                CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>

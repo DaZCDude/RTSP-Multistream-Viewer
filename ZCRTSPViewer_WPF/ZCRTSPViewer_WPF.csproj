@@ -20,6 +20,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+    <Content Include="Fonts\**">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <None Update="ffmpeg.exe">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
